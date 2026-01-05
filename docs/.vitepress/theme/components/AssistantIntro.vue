@@ -258,9 +258,11 @@ onBeforeUnmount(() => {
   display: flex;
   justify-content: flex-end;
   align-items: flex-start;
-  padding: clamp(20px, 4vw, 64px);
-  padding-top: clamp(110px, 18vh, 220px);
-  pointer-events: none;
+
+
+  padding-right: clamp(25vw, 10vw, 14vw);
+  padding-left: clamp(200px, 4vw, 64px);
+  padding-top: clamp(6vw, 24vh, 220px);
 }
 
 
@@ -281,21 +283,24 @@ onBeforeUnmount(() => {
 /* Message “bubble” als ruhiger UI-Block */
 .bubble {
   pointer-events: auto;
-  width: min(460px, 42vw);
-  max-width: 520px;
+  width: min(260px, 42vw);
 }
 
 .text {
   font-size: clamp(13px, 1.1vw, 16px);
   line-height: 1.7;
+  margin-bottom: clamp(28px, 6vh, 64px); 
 }
+
 
 
 /* Buttons wie in deinem Mock */
 .choices {
   display: grid;
   gap: 14px;
+  margin-top: 12px;
 }
+
 
 .choice {
   width: 100%;

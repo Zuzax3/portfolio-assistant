@@ -6,6 +6,7 @@ import { onMounted, onBeforeUnmount, ref, computed, nextTick } from 'vue'
  * idle -> line1 -> line2 -> choose -> done
  */
 const stage = ref('idle')
+const quietLine = ref('')         // zeigt einmal "Take your time."
 const selected = ref(null)
 const showButtons = ref(false)
 
@@ -47,6 +48,14 @@ const DATA = {
   ]
 }
 
+const assistantPose = ref('idle') 
+// 'idle' | 'active' | 'back'
+
+const heroImg = computed(() => {
+  if (assistantPose.value === 'back') return '/assistant_back.png'
+  if (assistantPose.value === 'active') return '/assistant_active.png'
+  return '/assistant_idle.png'
+})
 
 const pick = (arr) => arr[Math.floor(Math.random() * arr.length)]
 const line1 = ref(pick(line1Options))
@@ -54,6 +63,8 @@ const line2 = ref(pick(line2Options))
 const ask = ref(pick(askOptions))
 
 const message = computed(() => {
+     if (quietLine.value) return quietLine.value
+
   if (stage.value === 'idle') return ''
   if (stage.value === 'line1') return line1.value
   if (stage.value === 'line2') return line2.value
@@ -68,10 +79,14 @@ const message = computed(() => {
 })
 
 function advance() {
+  if (panelOpen.value) return
+
   if (stage.value === 'idle') {
+    assistantPose.value = 'active'  // ✅ nur hier
     stage.value = 'line1'
     return
   }
+
   if (stage.value === 'line1') {
     stage.value = 'line2'
     return
@@ -89,23 +104,39 @@ function advance() {
 }
 
 function goTo(which) {
-  // statt scroll: Panel auf
   selected.value = which
+
   panelOpen.value = true
   panelView.value = which
   panelDetail.value = null
-  stage.value = 'idle'        // Assistent geht wieder “wegschauen”
+
+  // ✅ wichtig: beim Öffnen der Liste sofort idle
+  assistantPose.value = 'idle'
+  quietLine.value = ''
+
+  // falls du stage für message nutzt: hier ruhig lassen
+  stage.value = 'idle'
   showButtons.value = false
 }
 
+
 function openItem(item) {
   panelDetail.value = item
-  // optional: wenn du willst, dass sie kurz was sagt:
-  // stage.value = 'line1' etc.
+   // Assistent tritt zurück
+  assistantPose.value = 'back'
+
+  // Einmaliger Satz
+  quietLine.value = 'Take your time.'
+  setTimeout(() => {
+    quietLine.value = ''
+  }, 1400)
 }
 
 function backToList() {
   panelDetail.value = null
+
+  assistantPose.value = 'idle'
+  quietLine.value = ''
 }
 
 function closePanel() {
@@ -113,8 +144,13 @@ function closePanel() {
   panelView.value = ''
   panelDetail.value = null
   // optional: wieder zum Auswahlmodus
+  
+     assistantPose.value = 'active'
   stage.value = 'choose'
-  showButtons.value = true
+  showButtons.value = false
+  quietLine.value = ''
+
+  setTimeout(() => (showButtons.value = true), 250)
 }
 
 
@@ -154,12 +190,7 @@ onBeforeUnmount(() => {
   <section class="hero" aria-label="assistant hero">
     <!-- Background drawing -->
     <div class="hero-media" @click="engageOnce">
-      <img
-        class="hero-img"
-        :src="stage === 'idle' ? '/assistant_idle.png' : '/assistant_active.png'"
-        alt=""
-        draggable="false"
-      />
+      <img class="hero-img"  :src="heroImg" alt="" draggable="false" />
     </div>
 
     <!-- Overlay: message + buttons -->
@@ -184,7 +215,7 @@ onBeforeUnmount(() => {
     </div>
 
     <!-- RIGHT PANEL -->
-<aside class="panel" :class="{ open: panelOpen }">
+<aside class="panel" :class="{open: panelOpen, detail: !!panelDetail }">
   <div class="panel-inner">
     <div class="panel-top">
       <div class="panel-title">{{ panelView }}//</div>
@@ -349,8 +380,14 @@ onBeforeUnmount(() => {
   pointer-events: auto;
 }
 
+.panel.detail {
+  width: min(760px, 54vw);
+}
+
 .panel-inner {
   height: 100%;
+  max-width: 680px;
+  margin: 0 auto;
   padding: 22px;
   display: flex;
   flex-direction: column;

@@ -407,15 +407,6 @@ onBeforeUnmount(() => {
   opacity: 0.9;
 }
 
-.panel-close {
-  background: transparent;
-  border: none;
-  color: #fff;
-  font-size: 22px;
-  cursor: pointer;
-  opacity: 0.85;
-}
-
 .panel-list {
   display: flex;
   flex-direction: column;

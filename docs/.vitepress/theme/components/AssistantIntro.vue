@@ -1,6 +1,6 @@
 <script setup>
 import { onMounted, onBeforeUnmount, ref, computed, nextTick } from 'vue'
-
+import { portfolioContent as DATA } from '../content/portfolioContent'
 /**
  * stages:
  * idle -> line1 -> line2 -> choose -> done
@@ -32,21 +32,7 @@ const panelOpen = ref(false)
 const panelView = ref('') // 'projects' | 'unfold' | 'sketches' | ''
 const panelDetail = ref(null) // item object or null
 
-const DATA = {
-  projects: [
-    { id: 'doubt-it', title: 'Doubt It', meta: 'interactive / AI / satire' },
-    { id: 'listener', title: 'Listener', meta: 'speculative object' },
-    { id: 'poppies', title: 'Data/Drama – Poppies', meta: 'installation' },
-  ],
-  unfold: [
-    { id: 'unfold-01', title: 'UNFOLD// 01', meta: 'poster / typography' },
-    { id: 'unfold-02', title: 'UNFOLD// 02', meta: 'poster / layout' },
-  ],
-  sketches: [
-    { id: 'sketch-01', title: 'Sketch// 01', meta: 'ink / fragment' },
-    { id: 'sketch-02', title: 'Sketch// 02', meta: 'study' },
-  ]
-}
+
 
 const assistantPose = ref('idle') 
 // 'idle' | 'active' | 'back'
@@ -217,37 +203,69 @@ onBeforeUnmount(() => {
     <!-- RIGHT PANEL -->
 <aside class="panel" :class="{open: panelOpen, detail: !!panelDetail }">
   <div class="panel-inner">
-    <div class="panel-top">
-      <div class="panel-title">{{ panelView }}//</div>
-      <button class="panel-close" type="button" @click="closePanel">×</button>
-    </div>
 
-    <!-- LIST VIEW -->
-    <div v-if="panelOpen && !panelDetail" class="panel-list">
-      <button
-        v-for="item in DATA[panelView]"
-        :key="item.id"
-        class="panel-item"
-        type="button"
-        @click="openItem(item)"
-      >
-        <div class="panel-item-title">{{ item.title }}</div>
-        <div class="panel-item-meta">{{ item.meta }}</div>
-      </button>
-    </div>
-
-    <!-- DETAIL VIEW (placeholder for next step) -->
-    <div v-else-if="panelOpen && panelDetail" class="panel-detail">
-      <div class="detail-title">{{ panelDetail.title }}</div>
-      <div class="detail-meta">{{ panelDetail.meta }}</div>
-
-      <div class="detail-body">
-        (next: project overview / images / tell me more)
+    <!-- unified nav: back (left) when in detail, close (right) always -->
+    <div class="detail-nav">
+      <div class="detail-nav-left">
+        <button
+          v-if="panelDetail"
+          class="detail-back"
+          type="button"
+          @click="backToList"
+          aria-label="Back to list"
+        >
+          ←
+        </button>
       </div>
-
-      <button class="panel-back" type="button" @click="backToList">← back</button>
+      <button class="panel-close" type="button" @click="closePanel" aria-label="Close panel">×</button>
     </div>
+ 
+   <!-- LIST VIEW -->
+   <template v-if="panelOpen && !panelDetail">
+     <div class="panel-title">{{ panelView }}//</div>
+ 
+     <div class="panel-list">
+       <button
+         v-for="item in DATA[panelView]"
+         :key="item.id"
+         class="panel-item"
+         type="button"
+         @click="openItem(item)"
+       >
+         <div class="panel-item-title">{{ item.title }}</div>
+         <div class="panel-item-meta">{{ item.meta }}</div>
+       </button>
+     </div>
+   </template>
+ 
+   <!-- DETAIL VIEW -->
+   <template v-else-if="panelOpen && panelDetail">
+  <div class="detail">
+ 
+   <div class="detail-kicker">{{ panelDetail.meta }}</div>
+   <div class="detail-title">{{ panelDetail.title }}</div>
+
+  <p class="detail-summary">
+    {{ panelDetail.summary }}
+  </p>
+
+  <div v-if="panelDetail.image" class="detail-media">
+    <img :src="panelDetail.image" alt="" />
   </div>
+
+  <div class="detail-actions">
+    <button class="btn-outline" type="button" @click="tellMeMore(panelDetail)">
+      Tell me more
+    </button>
+    <button class="btn-outline" type="button" @click="goSeeAll(panelView)">
+      See all
+    </button>
+  </div>
+</div>
+  </template>
+
+</div>
+
 </aside>
 
   </section>
@@ -407,6 +425,15 @@ onBeforeUnmount(() => {
   opacity: 0.9;
 }
 
+.panel-close {
+  background: transparent;
+  border: none;
+  color: #fff;
+  font-size: 22px;
+  cursor: pointer;
+  opacity: 0.85;
+}
+
 .panel-list {
   display: flex;
   flex-direction: column;
@@ -458,16 +485,106 @@ onBeforeUnmount(() => {
   line-height: 1.6;
 }
 
-.panel-back {
-  margin-top: auto;
-  background: transparent;
-  border: 1px solid rgba(255,255,255,0.2);
-  color: #fff;
-  padding: 10px 12px;
-  border-radius: 10px;
-  cursor: pointer;
-  opacity: 0.9;
+.detail-media {
+  width: 100%;
+  border-radius: 14px;
+  overflow: hidden;
+  background: rgba(255,255,255,.06);
+  max-height: 360px;          /* <- begrenzt die Höhe */
 }
+
+.detail-media img{
+  width: 100%;
+  height: 360px;              /* <- gleiche Höhe wie max-height */
+  object-fit: cover;          /* <- wirkt hochwertig */
+  display: block;
+}
+
+
+.detail{
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+
+  padding-top: 30px;   /* Platz unter den zurück und close Buttons */
+}
+
+.detail-top{
+  margin: 0;
+}
+
+.detail-kicker{ /* Kicker-Text über Titel */
+  font-size: 12px;
+  letter-spacing: .08em;
+  opacity: .7;
+  margin-bottom: 10px;
+}
+
+.detail-title{ /* Haupttitel */ 
+  font-size: clamp(26px, 2.2vw, 40px);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  margin-bottom: 10px;
+}
+
+.detail-summary{ /* Text-Absatz unter Titel */ 
+  max-width: 62ch;
+  font-size: 14px;
+  line-height: 1.8;
+  opacity: .92;
+  margin: 0 0 18px 0;   /* <- Space unter Text */
+}
+
+.detail-actions{ /* Button-Gruppe unten */ 
+  display: flex;
+  gap: 18px;                 /* <- Abstand zwischen Buttons */
+  justify-content: center;
+  padding-top: 18px;
+  margin-top: 10px;
+}
+
+.detail-nav{
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  right: 16px;
+  z-index: 5;
+
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  padding: 0;          /* wichtig: kein Innenpadding */
+  pointer-events: none; /* damit sie keinen Layout/Click-Fokus klaut */
+}
+
+/* Buttons sollen klickbar bleiben */
+.detail-nav button{
+  pointer-events: auto;
+}
+
+.detail-back,
+.panel-close{
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+
+  background: transparent;
+  border: none;
+  color: rgba(255,255,255,.75);
+  font-size: 22px; /* Pfeil/X gut sichtbar */
+  cursor: pointer;
+  border-radius: 10px;
+}
+
+.detail-back:hover,
+.panel-close:hover{
+  color: rgba(255,255,255,.95);
+  background: rgba(255,255,255,.06);
+}
+
 
 </style>
 
